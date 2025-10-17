@@ -2,6 +2,8 @@
 
 Get up and running with the BikininjaPosters Mod Generator in **3 simple steps**.
 
+**⏱️ Time needed:** 5 minutes (assuming Python & FFmpeg are installed)
+
 ## What Does This Do?
 
 This tool automatically creates multiple **Thunderstore mod packs** for CustomPosters (Lethal Company). It:
@@ -9,6 +11,8 @@ This tool automatically creates multiple **Thunderstore mod packs** for CustomPo
 - 🎯 Assigns them intelligently to 6 poster slots per mod (5 posters + 1 tip)
 - 📦 Generates ready-to-upload mod archives
 - 🚀 Publishes to Thunderstore via GitHub Actions (optional)
+
+**👉 First time?** Read [STEP_BY_STEP_GUIDE.md](STEP_BY_STEP_GUIDE.md) for complete setup instructions including Python & FFmpeg installation.
 
 ---
 
