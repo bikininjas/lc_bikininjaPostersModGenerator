@@ -21,24 +21,123 @@ Write-Info "║   BikininjaPosters Mod Generator (Windows)                 ║"
 Write-Info "╚════════════════════════════════════════════════════════════╝"
 Write-Host ""
 
-# Check Python
-try {
-    $pythonVersion = python --version 2>&1
-    Write-Success "✓ Python found: $pythonVersion"
-} catch {
-    Write-Error-Custom "✗ Python not found. Please install Python 3.10+ from python.org"
+# Dependency checking and installation
+Write-Info "Checking dependencies..."
+Write-Host ""
+
+# Function to check Python
+function Test-Python {
+    try {
+        $pythonVersion = python --version 2>&1
+        Write-Success "✓ Python found: $pythonVersion"
+        return $true
+    } catch {
+        Write-Error-Custom "✗ Python not found"
+        Write-Warning-Custom "Install Python 3.10+:"
+        Write-Warning-Custom "  1. Download from: https://www.python.org/downloads/"
+        Write-Warning-Custom "  2. Run installer (check 'Add Python to PATH')"
+        Write-Warning-Custom "  3. Restart PowerShell and try again"
+        return $false
+    }
+}
+
+# Function to check FFmpeg
+function Test-FFmpeg {
+    try {
+        $ffmpegVersion = ffmpeg -version 2>&1 | Select-Object -First 1
+        Write-Success "✓ FFmpeg found: $ffmpegVersion"
+        return $true
+    } catch {
+        Write-Warning-Custom "⚠ FFmpeg not found"
+        Write-Warning-Custom "Install FFmpeg:"
+        Write-Warning-Custom "  Option 1 (Chocolatey): choco install ffmpeg"
+        Write-Warning-Custom "  Option 2 (WinGet): winget install ffmpeg"
+        Write-Warning-Custom "  Option 3 (Manual): https://ffmpeg.org/download.html"
+        
+        # Check if Chocolatey is available
+        if (Get-Command choco -ErrorAction SilentlyContinue) {
+            $response = Read-Host "Install FFmpeg via Chocolatey? (y/n)"
+            if ($response -eq 'y') {
+                try {
+                    choco install ffmpeg -y
+                    Write-Success "✓ FFmpeg installed"
+                    return $true
+                } catch {
+                    Write-Error-Custom "Failed to install FFmpeg via Chocolatey"
+                    return $false
+                }
+            }
+        }
+        # Check if WinGet is available
+        elseif (Get-Command winget -ErrorAction SilentlyContinue) {
+            $response = Read-Host "Install FFmpeg via WinGet? (y/n)"
+            if ($response -eq 'y') {
+                try {
+                    winget install ffmpeg
+                    Write-Success "✓ FFmpeg installed"
+                    return $true
+                } catch {
+                    Write-Error-Custom "Failed to install FFmpeg via WinGet"
+                    return $false
+                }
+            }
+        }
+        
+        Write-Warning-Custom "⚠ Skipped. Video processing will fail."
+        return $false
+    }
+}
+
+# Function to check Python dependencies
+function Test-PythonDeps {
+    Write-Info "Checking Python dependencies..."
+    
+    $pythonScript = @'
+import sys
+import subprocess
+
+required_packages = {
+    'PIL': 'Pillow',
+    'cv2': 'opencv-python',
+    'requests': 'requests'
+}
+
+missing = []
+for pkg, pkg_name in required_packages.items():
+    try:
+        __import__(pkg)
+    except ImportError:
+        missing.append(pkg_name)
+
+if missing:
+    print(f"Missing: {', '.join(missing)}")
+    print("Installing...")
+    for pkg in missing:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg])
+    print("✓ Dependencies installed")
+else:
+    print("✓ All dependencies present")
+'@
+    
+    $pythonScript | python -
+    if ($LASTEXITCODE -eq 0) {
+        Write-Success "✓ Python dependencies ready"
+    } else {
+        Write-Error-Custom "Failed to install Python dependencies"
+        return $false
+    }
+    return $true
+}
+
+# Run all checks
+if (-not (Test-Python)) {
     exit 1
 }
 
-# Check FFmpeg
-try {
-    $ffmpegVersion = ffmpeg -version 2>&1 | Select-Object -First 1
-    Write-Success "✓ FFmpeg found: $ffmpegVersion"
-} catch {
-    Write-Warning-Custom "⚠ FFmpeg not found. Video processing will fail."
-    Write-Warning-Custom "  Install: https://ffmpeg.org/download.html or choco install ffmpeg"
-    Write-Host ""
-}
+Test-FFmpeg | Out-Null
+Test-PythonDeps
+
+Write-Host ""
 
 # Check input directory
 if (-not (Test-Path $Input -PathType Container)) {
