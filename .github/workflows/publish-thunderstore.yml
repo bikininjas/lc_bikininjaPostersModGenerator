@@ -5,15 +5,15 @@ on:
     types: [published]
 
 jobs:
-  extract-mod-name:
-    name: Extract Mod Name from Release
+  extract-mod-info:
+    name: Extract Mod Info from Release
     runs-on: ubuntu-latest
     outputs:
       mod_name: ${{ steps.extract.outputs.mod_name }}
       version: ${{ steps.extract.outputs.version }}
     
     steps:
-      - name: Extract mod name and version
+      - name: Extract mod name and version from tag
         id: extract
         run: |
           # Extract from tag name (format: BikininjaPostersXX-vX.X.X)
@@ -28,7 +28,7 @@ jobs:
   validate-release:
     name: Validate Release Assets
     runs-on: ubuntu-latest
-    needs: extract-mod-name
+    needs: extract-mod-info
     
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
       
       - name: Verify mod structure exists
         run: |
-          MOD="${{ needs.extract-mod-name.outputs.mod_name }}"
+          MOD="${{ needs.extract-mod-info.outputs.mod_name }}"
           if [ ! -d "mods/$MOD" ]; then
             echo "❌ Mod directory not found: mods/$MOD"
             exit 1
@@ -58,9 +58,9 @@ jobs:
           echo "✅ ZIP asset found"
 
   publish-thunderstore:
-    name: Publish ${{ needs.extract-mod-name.outputs.mod_name }} to Thunderstore
+    name: Publish ${{ needs.extract-mod-info.outputs.mod_name }} to Thunderstore
     runs-on: ubuntu-latest
-    needs: [extract-mod-name, validate-release]
+    needs: [extract-mod-info, validate-release]
     if: success()
     
     steps:
@@ -69,8 +69,8 @@ jobs:
       
       - name: Download release asset
         run: |
-          MOD="${{ needs.extract-mod-name.outputs.mod_name }}"
-          VERSION="${{ needs.extract-mod-name.outputs.version }}"
+          MOD="${{ needs.extract-mod-info.outputs.mod_name }}"
+          VERSION="${{ needs.extract-mod-info.outputs.version }}"
           
           # Download the ZIP file from release
           ASSET_URL="${{ github.event.release.assets[0].browser_download_url }}"
@@ -89,69 +89,26 @@ jobs:
           echo "✅ Downloaded: ${MOD}-${VERSION}.zip"
           ls -lh "${MOD}-${VERSION}.zip"
       
-      - name: Publish to Thunderstore
-        run: |
-          MOD="${{ needs.extract-mod-name.outputs.mod_name }}"
-          VERSION="${{ needs.extract-mod-name.outputs.version }}"
-          ZIP_FILE="${MOD}-${VERSION}.zip"
-          
-          echo "Publishing $MOD to Thunderstore..."
-          
-          # Use official Thunderstore action
-          # The action will use THUNDERSTORE_SVC_API_KEY secret
-          python -m pip install requests --quiet
-          
-          python << 'EOF'
-          import requests
-          import os
-          import sys
-          
-          MOD_NAME = os.environ['MOD']
-          VERSION = os.environ['VERSION']
-          ZIP_FILE = os.environ['ZIP_FILE']
-          API_KEY = os.environ['THUNDERSTORE_API_KEY']
-          
-          # Read ZIP file
-          with open(ZIP_FILE, 'rb') as f:
-              zip_content = f.read()
-          
-          # Prepare upload
-          url = "https://thunderstore.io/api/experimental/frontend/packages/create-version/"
-          headers = {
-              "Authorization": f"Bearer {API_KEY}",
-          }
-          
-          files = {
-              "file": (ZIP_FILE, zip_content, "application/zip"),
-          }
-          
-          data = {
-              "namespace": "Bikininjas",
-              "name": MOD_NAME,
-          }
-          
-          print(f"Uploading {MOD_NAME} v{VERSION} to Thunderstore...")
-          response = requests.post(url, files=files, data=data, headers=headers)
-          
-          if response.status_code in [200, 201]:
-              print(f"✅ Successfully published {MOD_NAME} v{VERSION} to Thunderstore")
-              print(f"Response: {response.json()}")
-          else:
-              print(f"❌ Failed to publish to Thunderstore")
-              print(f"Status: {response.status_code}")
-              print(f"Error: {response.text}")
-              sys.exit(1)
-          EOF
-        env:
-          MOD: ${{ needs.extract-mod-name.outputs.mod_name }}
-          VERSION: ${{ needs.extract-mod-name.outputs.version }}
-          ZIP_FILE: ${{ needs.extract-mod-name.outputs.mod_name }}-${{ needs.extract-mod-name.outputs.version }}.zip
-          THUNDERSTORE_API_KEY: ${{ secrets.THUNDERSTORE_SVC_API_KEY }}
+      - name: Upload to Thunderstore
+        uses: GreenTF/upload-thunderstore-package@v4.3
+        with:
+          namespace: Bikininjas
+          name: ${{ needs.extract-mod-info.outputs.mod_name }}
+          version: ${{ needs.extract-mod-info.outputs.version }}
+          description: "Bikininjas custom posters for CustomPosters mod in Lethal Company. Randomly selected from a curated collection."
+          token: ${{ secrets.THUNDERSTORE_SVC_API_KEY }}
+          community: lethal-company
+          repo: thunderstore.io
+          categories: |
+            cosmetics
+          deps: |
+            SE3YA-CustomPosters
+          website: ${{ github.server_url }}/${{ github.repository }}
       
       - name: Verify Thunderstore upload
         run: |
-          MOD="${{ needs.extract-mod-name.outputs.mod_name }}"
-          VERSION="${{ needs.extract-mod-name.outputs.version }}"
+          MOD="${{ needs.extract-mod-info.outputs.mod_name }}"
+          VERSION="${{ needs.extract-mod-info.outputs.version }}"
           
           echo "Verifying upload on Thunderstore..."
           sleep 5  # Give Thunderstore time to process
@@ -175,4 +132,4 @@ jobs:
               print(f"Status: {response.status_code}")
           EOF
         env:
-          MOD: ${{ needs.extract-mod-name.outputs.mod_name }}
+          MOD: ${{ needs.extract-mod-info.outputs.mod_name }}
