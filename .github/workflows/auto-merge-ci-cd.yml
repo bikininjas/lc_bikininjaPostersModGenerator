@@ -1,5 +1,4 @@
 name: Auto-Merge CI/CD PRs
-
 on:
   pull_request:
     paths:
