@@ -112,8 +112,16 @@ jobs:
           
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
           
-          # Extract PR number from URL
-          PR_NUMBER=$(echo "$PR_URL" | grep -oP '#\K\d+')
+          # Extract PR number from URL (handle both full URL and PR#N formats)
+          if [[ "$PR_URL" =~ /pull/([0-9]+) ]]; then
+            PR_NUMBER="${BASH_REMATCH[1]}"
+          elif [[ "$PR_URL" =~ ^#([0-9]+)$ ]]; then
+            PR_NUMBER="${BASH_REMATCH[1]}"
+          else
+            # Fallback: extract any digits
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+' | head -1)
+          fi
+          
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "Created PR #$PR_NUMBER"
       
