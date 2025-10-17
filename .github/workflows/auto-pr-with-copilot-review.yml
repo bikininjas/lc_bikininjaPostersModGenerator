@@ -84,14 +84,16 @@ jobs:
           LABEL="${{ steps.branch.outputs.label }}"
           
           # Create PR body with change summary
+          COMMIT_SUMMARY=$(git log --oneline -10 2>/dev/null || echo "No commits available")
+          
           PR_BODY=$(cat <<EOF
           ## Changes
           
           This PR contains changes from branch: \`$BRANCH_NAME\`
           
-          ### Commit Summary
+          ### Recent Commits
           \`\`\`
-          $(git log master..$BRANCH_NAME --oneline)
+          $COMMIT_SUMMARY
           \`\`\`
           
           ---
@@ -106,8 +108,7 @@ jobs:
             --body "$PR_BODY" \
             --base master \
             --head "$BRANCH_NAME" \
-            --label "$LABEL" \
-            --label "auto-generated")
+            --label "$LABEL")
           
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
           
@@ -125,7 +126,7 @@ jobs:
           BRANCH_NAME="${{ steps.branch.outputs.branch_name }}"
           
           # Get latest commit summary
-          LATEST_COMMITS=$(git log master..$BRANCH_NAME --oneline | head -5)
+          LATEST_COMMITS=$(git log --oneline -5 2>/dev/null || echo "No commits available")
           
           # Update PR body
           PR_BODY=$(cat <<EOF
