@@ -35,6 +35,23 @@ Choose your path:
 
 👉 **First time?** Read **[STEP_BY_STEP_GUIDE.md](STEP_BY_STEP_GUIDE.md)** instead!
 
+### 🔐 Safe Branch Workflow (Recommended)
+
+To prevent accidental commits to master without mods:
+
+```bash
+# After generating mods, create a branch ONLY if mods exist:
+bash scripts/create_branch_from_mods.sh feature/my-new-posters
+
+# Commit your changes
+git add . && git commit -m "feat: add new poster packs"
+
+# Push (auto-PR workflow creates PR automatically!)
+git push origin feature/my-new-posters
+```
+
+See **[docs/BRANCH_CREATION_GUIDE.md](docs/BRANCH_CREATION_GUIDE.md)** for details.
+
 ---
 
 ## 📋 What Gets Generated
@@ -207,6 +224,8 @@ Built for CustomPosters mod (Lethal Company). See repository for license details
 | `src/media_processor.py` | Aspect ratio analysis, crop/resize logic (Pillow, OpenCV) |
 | `src/mod_generator.py` | Mod structure creation, versioning, archive generation |
 | `scripts/generate_mods.py` | CLI entry point with argument parsing |
+| `scripts/create_branch_from_mods.sh` | Linux/Mac script to create branch only if mods exist |
+| `scripts/create_branch_from_mods.ps1` | Windows PowerShell script to create branch only if mods exist |
 | `generate_mods.sh` | Linux/Mac bash wrapper (auto-detects Python/dependencies) |
 | `generate_mods.ps1` | Windows PowerShell wrapper (auto-detects dependencies) |
 | `.github/workflows/` | GitHub Actions for CI/CD and Thunderstore publishing |
