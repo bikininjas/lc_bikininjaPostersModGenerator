@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bikininjapostermods"
+version = "0.1.0"
+description = "Python generator for Thunderstore CustomPosters mods"
+requires-python = ">=3.10"
+dependencies = [
+    "pillow>=10.0.0",
+    "opencv-python>=4.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+    "flake8>=6.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

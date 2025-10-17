@@ -1,0 +1,1 @@
+"""BikininjaPosters mod generator."""

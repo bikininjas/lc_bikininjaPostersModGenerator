@@ -1,0 +1,13 @@
+documentation:
+- changed-files:
+  - any-glob-to-any-file: '**/*.md'
+
+posters:
+- changed-files:
+  - any-glob-to-any-file: 
+    - 'BepInEx/plugins/BikininjaPosters*/**'
+
+cicd:
+- changed-files:
+  - any-glob-to-any-file: 
+    - '.github/**'
