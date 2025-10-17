@@ -1,1 +1,1 @@
-"""BikinjaPosters mod generator."""
+"""BikininjaPosters mod generator."""
