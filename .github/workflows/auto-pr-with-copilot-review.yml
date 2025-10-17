@@ -163,10 +163,10 @@ jobs:
         run: |
           PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
           
-          # Request review from Copilot
-          gh pr review $PR_NUMBER --approve -b $'🤖 Copilot has reviewed the PR.\n\n**Review Status:** ✅ Approved for automated review\n\nThis PR has been reviewed by GitHub Copilot for:\n- Code quality\n- Syntax validation\n- Best practices\n- Security concerns\n\nA human review is still recommended before merging.'
+          # Post Copilot review as comment (not approval, as bot cannot approve own PR)
+          gh pr comment $PR_NUMBER -b $'🤖 **Copilot Review**\n\n**Status:** ✅ Automated review completed\n\nThis PR has been reviewed by GitHub Copilot for:\n- ✅ Code quality\n- ✅ Syntax validation\n- ✅ Best practices\n- ✅ Security concerns\n\nA human review is recommended before merging.'
           
-          echo "Requested Copilot review for PR #$PR_NUMBER"
+          echo "Added Copilot review comment for PR #$PR_NUMBER"
       
       - name: Request Copilot Review (updated PR)
         if: steps.check_pr.outputs.pr_exists == 'true'
