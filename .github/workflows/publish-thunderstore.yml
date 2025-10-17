@@ -1,0 +1,114 @@
+name: Publish to Thunderstore
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  extract-mod-info:
+    name: Extract Mod Info from Release
+    runs-on: ubuntu-latest
+    outputs:
+      mod_name: ${{ steps.extract.outputs.mod_name }}
+      version: ${{ steps.extract.outputs.version }}
+    
+    steps:
+      - name: Extract mod name and version from tag
+        id: extract
+        run: |
+          # Extract from tag name (format: BikininjaPostersXX-vX.X.X)
+          TAG="${{ github.event.release.tag_name }}"
+          MOD_NAME=$(echo "$TAG" | sed 's/-v.*//')
+          VERSION=$(echo "$TAG" | sed 's/.*-//')
+          
+          echo "mod_name=$MOD_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted: MOD_NAME=$MOD_NAME, VERSION=$VERSION"
+
+  validate-release:
+    name: Validate Release Assets
+    runs-on: ubuntu-latest
+    needs: extract-mod-info
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Verify mod structure exists
+        run: |
+          MOD="${{ needs.extract-mod-info.outputs.mod_name }}"
+          if [ ! -d "mods/$MOD" ]; then
+            echo "❌ Mod directory not found: mods/$MOD"
+            exit 1
+          fi
+          if [ ! -f "mods/$MOD/BepInEx/plugins/Bikininja*$MOD/CustomPosters/posters"* ]; then
+            echo "❌ Poster files not found in mod structure"
+            exit 1
+          fi
+          echo "✅ Mod structure validated: $MOD"
+      
+      - name: Check release has ZIP asset
+        run: |
+          ASSETS="${{ join(github.event.release.assets.*.name, ' ') }}"
+          echo "Release assets: $ASSETS"
+          if [[ ! "$ASSETS" =~ \.zip$ ]]; then
+            echo "❌ No ZIP file found in release assets"
+            exit 1
+          fi
+          echo "✅ ZIP asset found"
+
+  publish-thunderstore:
+    name: Publish ${{ needs.extract-mod-info.outputs.mod_name }} to Thunderstore
+    runs-on: ubuntu-latest
+    needs: [extract-mod-info, validate-release]
+    if: success()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Upload to Thunderstore
+        uses: GreenTF/upload-thunderstore-package@v4.3
+        with:
+          namespace: Bikininjas
+          name: ${{ needs.extract-mod-info.outputs.mod_name }}
+          version: ${{ needs.extract-mod-info.outputs.version }}
+          description: "Bikininjas custom posters for CustomPosters mod in Lethal Company. Randomly selected from a curated collection."
+          token: ${{ secrets.THUNDERSTORE_SVC_API_KEY }}
+          community: lethal-company
+          repo: thunderstore.io
+          categories: |
+            cosmetics
+          deps: |
+            SE3YA-CustomPosters
+          website: ${{ github.server_url }}/${{ github.repository }}
+          path: mods/${{ needs.extract-mod-info.outputs.mod_name }}
+      
+      - name: Verify Thunderstore upload
+        run: |
+          MOD="${{ needs.extract-mod-info.outputs.mod_name }}"
+          VERSION="${{ needs.extract-mod-info.outputs.version }}"
+          
+          echo "Verifying upload on Thunderstore..."
+          sleep 5  # Give Thunderstore time to process
+          
+          python << 'EOF'
+          import requests
+          import os
+          
+          MOD_NAME = os.environ['MOD']
+          
+          # Check if mod exists on Thunderstore
+          url = f"https://thunderstore.io/api/v1/package/Bikininjas/{MOD_NAME}/"
+          response = requests.get(url)
+          
+          if response.status_code == 200:
+              pkg_info = response.json()
+              print(f"✅ Mod successfully published to Thunderstore")
+              print(f"Latest version: {pkg_info.get('latest', {}).get('version_number', 'Unknown')}")
+          else:
+              print(f"⚠️  Could not verify mod on Thunderstore (might still be processing)")
+              print(f"Status: {response.status_code}")
+          EOF
+        env:
+          MOD: ${{ needs.extract-mod-info.outputs.mod_name }}

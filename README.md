@@ -25,6 +25,21 @@ For detailed beginner instructions, see **[QUICKSTART.md](QUICKSTART.md)**.
 
 ---
 
+## 🤖 Automated CI/CD & Publishing
+
+**Zero-touch workflow** from PR to Thunderstore publication:
+
+1. **Create PR** with media changes or code updates
+2. **CI checks** validate code quality & conventional commits
+3. **Auto-merge** CI/CD-only PRs (with `ci-cd` label)
+4. **Generate mods** automatically on merge to master
+5. **Create releases** with auto-incremented versions (v1.0.0 → v1.0.1)
+6. **Publish to Thunderstore** each mod independently
+
+See **[QUICKSTART.md](QUICKSTART.md)** for complete setup and workflow details.
+
+---
+
 ## ✨ Features
 
 - **Smart Media Selection**: Analyzes aspect ratios, automatically assigns best-fit media to each poster
