@@ -50,25 +50,110 @@ echo -e "${BLUE}║   BikininjaPosters Mod Generator${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Check Python
+# Dependency checking and installation
+echo -e "${BLUE}Checking dependencies...${NC}"
+echo ""
+
+# Function to check and install Python
+check_python() {
+    if ! command -v python3 &> /dev/null; then
+        echo -e "${RED}✗ Python 3 not found${NC}"
+        echo -e "${YELLOW}Install Python 3.10+:${NC}"
+        echo "  Ubuntu/Debian: sudo apt-get update && sudo apt-get install -y python3 python3-pip"
+        echo "  macOS: brew install python3"
+        echo "  Or download: https://www.python.org/downloads/"
+        exit 1
+    fi
+    
+    PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+    echo -e "${GREEN}✓ Python found:${NC} $PYTHON_VERSION"
+}
+
+# Function to check and install FFmpeg
+check_ffmpeg() {
+    if ! command -v ffmpeg &> /dev/null; then
+        echo -e "${YELLOW}⚠ FFmpeg not found${NC}"
+        
+        # Detect OS and offer install command
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            echo -e "${YELLOW}Install FFmpeg:${NC}"
+            echo "  sudo apt-get update && sudo apt-get install -y ffmpeg"
+            read -p "Install FFmpeg now? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                sudo apt-get update && sudo apt-get install -y ffmpeg
+                echo -e "${GREEN}✓ FFmpeg installed${NC}"
+            else
+                echo -e "${YELLOW}⚠ Skipped. Video processing will fail.${NC}"
+            fi
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
+            echo -e "${YELLOW}Install FFmpeg:${NC}"
+            if command -v brew &> /dev/null; then
+                echo "  brew install ffmpeg"
+                read -p "Install FFmpeg now? (y/n) " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    brew install ffmpeg
+                    echo -e "${GREEN}✓ FFmpeg installed${NC}"
+                else
+                    echo -e "${YELLOW}⚠ Skipped. Video processing will fail.${NC}"
+                fi
+            else
+                echo "  Download: https://ffmpeg.org/download.html"
+                echo "  Or install Homebrew first: https://brew.sh"
+            fi
+        else
+            echo "  Download: https://ffmpeg.org/download.html"
+        fi
+        echo ""
+    else
+        echo -e "${GREEN}✓ FFmpeg found${NC}"
+    fi
+}
+
+# Function to check and install Python dependencies
+check_python_deps() {
+    echo -e "${BLUE}Checking Python dependencies...${NC}"
+    
+    # Create requirements check script
+    python3 << 'PYEOF'
+import sys
+import subprocess
+
+required_packages = ['PIL', 'cv2', 'requests']
+package_names = ['Pillow', 'opencv-python', 'requests']
+
+missing = []
+for pkg, pkg_name in zip(required_packages, package_names):
+    try:
+        __import__(pkg)
+    except ImportError:
+        missing.append(pkg_name)
+
+if missing:
+    print(f"Missing packages: {', '.join(missing)}")
+    print("Installing...")
+    for pkg in missing:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg])
+    print("Done!")
+else:
+    print("All Python dependencies installed")
+PYEOF
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Python dependencies checked${NC}"
+    fi
+    echo ""
+}
+
+# Run all checks
+check_python
+check_ffmpeg
+check_python_deps
+
 # Activate virtual environment if it exists
 if [ -f "venv/bin/activate" ]; then
     source venv/bin/activate
-fi
-
-# Check Python
-if ! command -v python3 &> /dev/null; then
-    printf "${RED}✗ Python not found. Please install Python 3.10+${NC}\n"
-    exit 1
-fi
-
-echo -e "${GREEN}✓ Python found:${NC} $(python3 --version)"
-
-# Check FFmpeg
-if ! command -v ffmpeg &> /dev/null; then
-  echo -e "${YELLOW}⚠ FFmpeg not found. Video processing will fail.${NC}"
-  echo -e "${YELLOW}  Install: sudo apt install ffmpeg (Ubuntu/Debian) or brew install ffmpeg (macOS)${NC}"
-  echo ""
 fi
 
 # Check input directory
