@@ -32,7 +32,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Verify mod structure exists
         run: |
@@ -65,7 +65,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Upload to Thunderstore
         uses: GreenTF/upload-thunderstore-package@v4.3
