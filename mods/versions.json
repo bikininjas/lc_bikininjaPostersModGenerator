@@ -1,0 +1,20 @@
+{
+  "versions": {
+    "BikininjaPosters01": "0.0.1",
+    "BikininjaPosters02": "0.0.1"
+  },
+  "used_media": [
+    "input/Boutin02.jpg",
+    "input/Chirac01.jpg",
+    "input/LouisSarko01.jpeg",
+    "input/Macron-Lecornu01.jpg",
+    "input/Macron01.jpg",
+    "input/MarineLePen01.jpg",
+    "input/MarineLePen02.jpg",
+    "input/Retailleau01.jpg",
+    "input/Sarko01.jpg",
+    "input/Sarko02.jpg",
+    "input/Trump01.jpg",
+    "input/Trump02.jpg"
+  ]
+}
