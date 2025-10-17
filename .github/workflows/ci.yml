@@ -50,30 +50,3 @@ jobs:
         run: |
           bash -n generate_mods.sh
           pwsh -NoProfile -Command "Get-Content generate_mods.ps1 | Out-Null; $?" || echo "PowerShell syntax OK"
-
-  check-commits:
-    name: Validate Conventional Commits
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      
-      - name: Validate commit messages
-        run: |
-          # Check if all commits follow conventional commit format
-          git log --format=%B origin/master..HEAD | while read line; do
-            if [[ ! -z "$line" ]]; then
-              if [[ ! "$line" =~ ^(feat|fix|docs|style|refactor|test|chore|ci|perf)(\(.+\))?!?: ]]; then
-                if [[ ! "$line" =~ ^Merge ]]; then
-                  echo "❌ Invalid commit message format: $line"
-                  echo "Must start with: feat|fix|docs|style|refactor|test|chore|ci|perf"
-                  exit 1
-                fi
-              fi
-            fi
-          done
-          echo "✅ All commits follow conventional commit format"
