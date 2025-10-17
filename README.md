@@ -36,7 +36,7 @@ For detailed beginner instructions, see **[QUICKSTART.md](QUICKSTART.md)**.
 5. **Create releases** with auto-incremented versions (v1.0.0 → v1.0.1)
 6. **Publish to Thunderstore** each mod independently
 
-See **[CICD_GUIDE.md](CICD_GUIDE.md)** for complete setup and workflow details.
+See **[QUICKSTART.md](QUICKSTART.md)** for complete setup and workflow details.
 
 ---
 
