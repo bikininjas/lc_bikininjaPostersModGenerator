@@ -1,0 +1,142 @@
+name: Generate and Publish Mods
+
+on:
+  workflow_dispatch:
+    inputs:
+      tolerance:
+        description: "Aspect ratio tolerance in percent"
+        required: false
+        default: "5"
+
+env:
+  PYTHON_VERSION: "3.10"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    outputs:
+      mods: ${{ steps.discover.outputs.mods }}
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Install FFmpeg for video processing
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate mods
+        id: generate
+        run: |
+          python scripts/generate_mods.py \
+            --input ./input \
+            --output ./mods \
+            --build ./build \
+            --tolerance ${{ github.event.inputs.tolerance || '5' }}
+
+      - name: Discover generated mods
+        id: discover
+        run: |
+          mods=()
+          if [ -d "build" ]; then
+            for zip_file in build/*.zip; do
+              if [ -f "$zip_file" ]; then
+                filename=$(basename "$zip_file")
+                mod_name="${filename%-v*}"
+                mods+=("$mod_name")
+              fi
+            done
+          fi
+          
+          # Convert array to JSON format for matrix strategy
+          json_mods=$(printf '%s\n' "${mods[@]}" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "mods=$json_mods" >> $GITHUB_OUTPUT
+          echo "Found mods: $json_mods"
+        shell: bash
+
+      - name: Upload mods as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: mod-archives
+          path: build/*.zip
+          retention-days: 7
+
+      - name: Create GitHub Release
+        if: steps.discover.outputs.mods != '[]'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/*.zip
+          tag_name: ${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-thunderstore:
+    needs: generate
+    runs-on: ubuntu-latest
+    if: needs.generate.outputs.mods != '[]' && needs.generate.outputs.mods != ''
+    strategy:
+      matrix:
+        mod: ${{ fromJson(needs.generate.outputs.mods) }}
+      max-parallel: 1  # Publish one at a time
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download mod archive
+        uses: actions/download-artifact@v3
+        with:
+          name: mod-archives
+
+      - name: Parse mod information
+        id: mod_info
+        run: |
+          MOD_NAME="${{ matrix.mod }}"
+          MOD_FILE="${MOD_NAME}-v*.zip"
+          
+          # Find the actual zip file (handles versioning)
+          for f in ${MOD_FILE}; do
+            if [ -f "$f" ]; then
+              VERSION=$(echo "$f" | sed 's/.*-v//' | sed 's/\.zip//')
+              echo "mod_file=$f" >> $GITHUB_OUTPUT
+              echo "mod_name=$MOD_NAME" >> $GITHUB_OUTPUT
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              echo "Publishing $MOD_NAME v$VERSION"
+              break
+            fi
+          done
+
+      - name: Upload to Thunderstore
+        uses: GreenTF/upload-thunderstore-package@v4.3
+        with:
+          namespace: Bikininjas
+          name: ${{ steps.mod_info.outputs.mod_name }}
+          version: ${{ steps.mod_info.outputs.version }}
+          description: "Bikininjas custom posters for CustomPosters mod in Lethal Company. Randomly selected from a curated collection."
+          token: ${{ secrets.THUNDERSTORE_SVC_API_KEY }}
+          community: lethal-company
+          repo: thunderstore.io
+          categories: |
+            cosmetics
+          deps: |
+            SE3YA-CustomPosters
+          website: ${{ github.server_url }}/${{ github.repository }}

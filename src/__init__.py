@@ -1,0 +1,1 @@
+"""BikinjaPosters mod generator."""
