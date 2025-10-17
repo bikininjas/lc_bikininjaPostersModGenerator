@@ -191,7 +191,7 @@ class ModGenerator:
         
         except Exception as e:
             print(f"✗ Error creating archive: {e}")
-            return False
+            return None
     
     def get_next_mod_number(self) -> int:
         """Get next available mod number."""
