@@ -67,28 +67,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Download release asset
-        run: |
-          MOD="${{ needs.extract-mod-info.outputs.mod_name }}"
-          VERSION="${{ needs.extract-mod-info.outputs.version }}"
-          
-          # Download the ZIP file from release
-          ASSET_URL="${{ github.event.release.assets[0].browser_download_url }}"
-          if [ -z "$ASSET_URL" ]; then
-            echo "❌ Could not find asset download URL"
-            exit 1
-          fi
-          
-          curl -L -o "${MOD}-${VERSION}.zip" "$ASSET_URL"
-          
-          if [ ! -f "${MOD}-${VERSION}.zip" ]; then
-            echo "❌ Failed to download ZIP file"
-            exit 1
-          fi
-          
-          echo "✅ Downloaded: ${MOD}-${VERSION}.zip"
-          ls -lh "${MOD}-${VERSION}.zip"
-      
       - name: Upload to Thunderstore
         uses: GreenTF/upload-thunderstore-package@v4.3
         with:
@@ -104,6 +82,7 @@ jobs:
           deps: |
             SE3YA-CustomPosters
           website: ${{ github.server_url }}/${{ github.repository }}
+          path: mods/${{ needs.extract-mod-info.outputs.mod_name }}
       
       - name: Verify Thunderstore upload
         run: |
